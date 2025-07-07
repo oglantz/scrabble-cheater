@@ -1,3 +1,5 @@
+import tqdm
+
 class TrieNode:
     def __init__(self):
         self.children = {}
@@ -30,3 +32,22 @@ class Trie:
                 return False
             node = node.children[char]
         return True
+
+def load_dictionary(file_path):
+    trie = Trie()
+    with open(file_path, 'r') as file:
+
+        for line in file:
+            word = line.strip().upper().split()[0]  # Convert to uppercase
+            if word:  # Ensure the word is not empty
+                trie.insert(word)
+    return trie
+
+
+if __name__ == "__main__":
+    # Example usage
+    trie = load_dictionary('wordset.txt')
+    print(trie.is_word('HELLO'))  # Check if 'HELLO' is a valid word
+    print(trie.starts_with('HE'))   # Check if any word starts with 'HE'
+    print(trie.is_word('WORLD'))     # Check if 'WORLD' is a valid word
+    print(trie.starts_with('WOR'))    # Check if any word starts with 'WOR'

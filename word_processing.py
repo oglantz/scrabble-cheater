@@ -64,10 +64,10 @@ class WordProcessor():
                 self.valid_words_with_def[word_and_def[0]] = word_and_def[1]
 
 
-characters = "AHFJD**"
-x = WordProcessor("wordset.txt", characters, 1)
-x.generate_valid_words()
-x.calculate_pts()
-print(x.valid_word_with_pts)
-print(x.valid_words_with_def)
+# characters = "AHFJD**"
+# x = WordProcessor("wordset.txt", characters, 1)
+# x.generate_valid_words()
+# x.calculate_pts()
+# print(x.valid_word_with_pts)
+# print(x.valid_words_with_def)
 

@@ -1,7 +1,7 @@
 '''
 Houses Scrabble Board class and related functions/objects.
 '''
-
+BOARD_SIZE = 15  # Standard Scrabble board size
 
 class Tile:
     def __init__(self, letter=None, premium=None, is_blank=False):
@@ -41,4 +41,34 @@ class Board:
             (12, 6): 'DL', (12, 8): 'DL',
             (14, 3): 'DL', (14, 11): 'DL',
         }
-        self.tiles = [[Tile() for _ in range(15)] for _ in range(15)]
+        self.board = [[Tile() for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+        self.__initBoard()
+        self.anchors = set()
+        
+
+    def __initBoard(self):
+        for (r, c), premium in self.premium_map.items():
+            self.board[r][c].premium = premium
+    
+    def print_board(self):
+        for r in range(BOARD_SIZE):
+            print(' '.join(self.board[r][c].premium or '--' for c in range(BOARD_SIZE)))
+
+    def find_anchors(self):
+        for r in range(BOARD_SIZE):
+            for c in range(BOARD_SIZE):
+                if self.board[r][c].letter is not None:
+                    for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE:
+                            if self.board[nr][nc].letter is None:
+                                self.anchors.add((nr, nc))
+        # Special case: empty board, must place on center
+        if not any(tile.letter for row in self.board for tile in row):
+            self.anchors.add((7, 7))
+
+
+board = Board()
+board.print_board()
+board.find_anchors()
+print("Anchors found:", board.anchors)

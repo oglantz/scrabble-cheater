@@ -10,10 +10,9 @@ def main():
 
     # Initialize the board
     board = Board()
-    board.print_board()
 
     # Example rack
-    rack = ['S', 'O', 'L', 'V', 'E', 'R', '_']
+    rack = ['S', 'O', 'L', 'V', 'E', '_', '_']
 
     # Find anchors on the board
     board.find_anchors()

@@ -10,9 +10,10 @@ class Solver:
         self.letter_values = {
             'A':1, 'B':3, 'C':3, 'D':2, 'E':1, 'F':4, 'G':2, 'H':4,
             'I':1, 'J':8, 'K':5, 'L':1, 'M':3, 'N':1, 'O':1, 'P':3,
-            'Q':10, 'R':1, 'S':1, 'T':1, 'U':1, 'V':4, 'W':4, 'X':8,
+            'Q':10, 'R':1, 'S':1, 'S':1, 'T':1, 'U':1, 'V':4, 'W':4, 'X':8,
             'Y':4, 'Z':10
         }
+        self.center = (7, 7)
 
     def get_crossword(self, board, row, col, direction):
         dr, dc = (0, 1) if direction == 'down' else (1, 0)
@@ -33,11 +34,10 @@ class Solver:
         return (word, tiles) if len(word) > 1 else (None, None)
 
     def get_main_word_span(self, board, placed, direction):
-        placed_set = {(r, c) for r, c, _, _ in placed}
+        placed_map = {(r, c): (letter, is_blank) for r, c, letter, is_blank in placed}
         dr, dc = (0, 1) if direction == 'right' else (1, 0)
         first_r, first_c = placed[0][0], placed[0][1]
 
-        # Step to beginning of word
         while 0 <= first_r - dr < BOARD_SIZE and 0 <= first_c - dc < BOARD_SIZE and board[first_r - dr][first_c - dc].letter:
             first_r -= dr
             first_c -= dc
@@ -45,10 +45,16 @@ class Solver:
         r, c = first_r, first_c
         word = ''
         tiles = []
-        while 0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and (board[r][c].letter or (r, c) in placed_set):
-            tile = board[r][c] if board[r][c].letter else next(t for t in placed if t[0] == r and t[1] == c)
-            letter = tile.letter if isinstance(tile, Tile) else tile[2]
-            is_blank = tile.is_blank if isinstance(tile, Tile) else tile[3]
+        while 0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and (
+            board[r][c].letter or (r, c) in placed_map):
+
+            if (r, c) in placed_map:
+                letter, is_blank = placed_map[(r, c)]
+            else:
+                tile = board[r][c]
+                letter = tile.letter
+                is_blank = tile.is_blank
+
             word += letter
             tiles.append((r, c, letter, is_blank))
             r += dr
@@ -97,25 +103,44 @@ class Solver:
     def score_word(self, word, tiles):
         word_multiplier = 1
         score = 0
+
         for r, c, letter, is_blank in tiles:
             val = 0 if is_blank else self.letter_values[letter]
             premium = self.board[r][c].premium if self.board[r][c].letter is None else None
+
+            tile_score = val
             if premium == 'DL':
-                score += val * 2
+                tile_score = val * 2
             elif premium == 'TL':
-                score += val * 3
-            else:
-                score += val
+                tile_score = val * 3
+
             if premium == 'DW':
                 word_multiplier *= 2
             elif premium == 'TW':
                 word_multiplier *= 3
+
+            score += tile_score
+
         return score * word_multiplier
 
     def score_placement(self, _, placed, direction):
         main_word, tiles = self.get_main_word_span(self.board, placed, direction)
         if not self.wordset.is_word(main_word):
             return -1
+
+        # First move: must hit center
+        if self.board[self.center[0]][self.center[1]].letter is None:
+            if all((r, c) != self.center for r, c, _, _ in placed):
+                return -1
+        else:
+            # Later moves must connect to existing words
+            if not any(
+                (abs(r - dr) == 1 and 0 <= r - dr < BOARD_SIZE and self.board[r - dr][c].letter) or
+                (abs(c - dc) == 1 and 0 <= c - dc < BOARD_SIZE and self.board[r][c - dc].letter)
+                for r, c, _, _ in placed
+                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]
+            ) and not any(self.board[r][c].letter for r, c, _, _ in placed):
+                return -1
 
         total_score = self.score_word(main_word, tiles)
         for r, c, letter, is_blank in placed:

@@ -67,8 +67,3 @@ class Board:
         if not any(tile.letter for row in self.board for tile in row):
             self.anchors.add((7, 7))
 
-
-board = Board()
-board.print_board()
-board.find_anchors()
-print("Anchors found:", board.anchors)

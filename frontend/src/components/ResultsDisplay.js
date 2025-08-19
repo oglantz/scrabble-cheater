@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ScrabbleBoard from './ScrabbleBoard';
 
 const ResultsDisplay = ({ results }) => {
   const [selectedMove, setSelectedMove] = useState(0);
@@ -16,8 +17,7 @@ const ResultsDisplay = ({ results }) => {
   const move = results.moves[selectedMove];
 
   const formatPosition = (row, col) => {
-    const letters = 'ABCDEFGHIJKLMNO';
-    return `${letters[col]}${row + 1}`;
+    return `${row + 1},${col + 1}`;
   };
 
   const getDirectionIcon = (direction) => {
@@ -143,6 +143,12 @@ const ResultsDisplay = ({ results }) => {
           )}
         </div>
       </div>
+
+      {/* Visual Board Display */}
+      <ScrabbleBoard 
+        boardState={results.board_state} 
+        selectedMove={move} 
+      />
 
       {/* Instructions */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

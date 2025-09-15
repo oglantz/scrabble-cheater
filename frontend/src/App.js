@@ -5,6 +5,10 @@ import ResultsDisplay from './components/ResultsDisplay';
 import Header from './components/Header';
 import './App.css';
 
+/**
+ * Root application component.
+ * Manages uploaded image, tile state, analysis calls, and renders UI sections.
+ */
 function App() {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [userTiles, setUserTiles] = useState([]);

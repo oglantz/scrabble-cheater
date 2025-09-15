@@ -1,7 +1,7 @@
 """
 Photo Service
-Handles processing board images to extract board state
-Currently contains stubs - ready for future computer vision implementation
+Handles processing board images to extract board state.
+Current implementation is a stub with clear extension points for CV/OCR.
 """
 
 import logging
@@ -12,14 +12,14 @@ from werkzeug.datastructures import FileStorage
 logger = logging.getLogger(__name__)
 
 class PhotoService:
-    """Service for processing Scrabble board photos"""
+    """Service for processing Scrabble board photos."""
     
     def __init__(self):
         self.vision_enabled = False  # Will be True when CV is implemented
     
     def process_board_image(self, image_file: FileStorage) -> Optional[BoardState]:
         """
-        Process an uploaded board image to extract board state
+        Process an uploaded board image to extract board state.
         
         Args:
             image_file: Uploaded image file
@@ -54,7 +54,7 @@ class PhotoService:
             return None
     
     def _is_valid_image(self, image_file: FileStorage) -> bool:
-        """Check if uploaded file is a valid image"""
+        """Check if uploaded file is a valid image."""
         if not image_file.filename:
             return False
         
@@ -65,7 +65,7 @@ class PhotoService:
     
     def _get_test_board_for_image(self) -> BoardState:
         """
-        Return a test board state for development
+        Return a test board state for development.
         Can be modified to return different test scenarios
         """
         # For now, return empty board - user can test with their own tiles
@@ -76,7 +76,7 @@ class PhotoService:
     
     def _extract_board_state_cv(self, image_file: FileStorage) -> Optional[BoardState]:
         """
-        Future implementation: Extract board state using computer vision
+        Future implementation: Extract board state using computer vision.
         
         This is where the computer vision magic will happen:
         1. Load image using OpenCV/Pillow
@@ -132,7 +132,7 @@ class PhotoService:
             return None
     
     def get_processing_status(self) -> dict:
-        """Get information about photo processing capabilities"""
+        """Get information about photo processing capabilities."""
         return {
             "vision_enabled": self.vision_enabled,
             "supported_formats": [".jpg", ".jpeg", ".png", ".bmp", ".gif"],
@@ -146,7 +146,7 @@ class PhotoService:
         }
     
     def enable_vision_processing(self):
-        """Enable computer vision processing (when implemented)"""
+        """Enable computer vision processing (when implemented)."""
         # Future: Check if required libraries are available
         try:
             import cv2

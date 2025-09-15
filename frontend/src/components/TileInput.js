@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
 
+/**
+ * TileInput component
+ * Lets the user enter up to 7 tiles via individual inputs or a single text box.
+ * Emits the current tile array via onTilesChange(Array<string>).
+ *
+ * @param {{ onTilesChange: (tiles: string[]) => void }} props
+ */
+
 const TileInput = ({ onTilesChange }) => {
   const [tiles, setTiles] = useState(['', '', '', '', '', '', '']);
   const [inputMethod, setInputMethod] = useState('individual'); // 'individual' or 'text'

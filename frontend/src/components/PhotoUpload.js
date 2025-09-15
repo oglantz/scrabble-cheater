@@ -1,5 +1,14 @@
 import React, { useState, useRef } from 'react';
 
+/**
+ * PhotoUpload component
+ * - Drag-and-drop or click-to-select image upload for the board photo.
+ * - Calls onImageUpload(File) when a valid image is selected.
+ */
+
+/**
+ * @param {{ onImageUpload: (file: File) => void }} props
+ */
 const PhotoUpload = ({ onImageUpload }) => {
   const [dragActive, setDragActive] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);

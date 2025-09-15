@@ -1,6 +1,10 @@
 """
 Scrabble Cheater Flask Backend
-Main application entry point with API endpoints
+Main application entry point with API endpoints.
+
+Exposes endpoints for analyzing a Scrabble board state and returning optimal
+moves given user-provided rack tiles. Can accept JSON (manual board) or
+multipart form with an image (future CV support).
 """
 
 from flask import Flask, request, jsonify

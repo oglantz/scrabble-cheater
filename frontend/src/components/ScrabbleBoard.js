@@ -1,5 +1,16 @@
 import React from 'react';
 
+/**
+ * ScrabbleBoard component
+ * Visualizes a 15x15 board with premium squares, existing tiles, and the
+ * tiles of the currently selected move.
+ *
+ * @param {{
+ *   boardState: any,
+ *   selectedMove: { tiles?: Array<[number, number, string, boolean]> } | null,
+ * }} props
+ */
+
 const ScrabbleBoard = ({ boardState, selectedMove }) => {
   const BOARD_SIZE = 15;
   

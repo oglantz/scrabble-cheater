@@ -1,6 +1,6 @@
 """
 Move Model
-Represents a possible Scrabble move
+Represents a possible Scrabble move structured for API responses and services.
 """
 
 from typing import List, Tuple, Dict, Any
@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Move:
-    """Represents a Scrabble move with all necessary information"""
+    """Represents a Scrabble move with all necessary information."""
     
     word: str  # The word to be played
     score: int  # Points scored for this move
@@ -17,7 +17,7 @@ class Move:
     start: Tuple[int, int]  # (row, col) starting position
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert move to dictionary for JSON serialization"""
+        """Convert move to dictionary for JSON serialization."""
         return {
             "word": self.word,
             "score": self.score,
@@ -28,7 +28,7 @@ class Move:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Move':
-        """Create Move from dictionary"""
+        """Create Move from dictionary."""
         return cls(
             word=data["word"],
             score=data["score"],
@@ -39,7 +39,7 @@ class Move:
     
     @classmethod
     def from_legacy(cls, legacy_move: Dict[str, Any]) -> 'Move':
-        """Convert from legacy solver output format"""
+        """Convert from legacy solver output format."""
         return cls(
             word=legacy_move["word"],
             score=legacy_move["score"],

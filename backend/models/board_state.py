@@ -1,7 +1,7 @@
 """
 Board State Model
-Represents the current state of a Scrabble board
-Designed to be easily populated from either manual input or photo processing
+Represents the current state of a Scrabble board.
+Designed to be easily populated from either manual input or photo processing.
 """
 
 from typing import List, Dict, Optional, Tuple, Any
@@ -10,7 +10,7 @@ import copy
 
 @dataclass
 class BoardTile:
-    """Represents a single tile on the board"""
+    """Represents a single tile on the board."""
     letter: Optional[str] = None  # None for empty, A-Z for letters
     is_blank: bool = False  # True if this was placed as a blank tile
     premium: Optional[str] = None  # TW, DW, TL, DL, or None
@@ -38,7 +38,7 @@ class BoardTile:
 
 
 class BoardState:
-    """Represents the complete state of a Scrabble board"""
+    """Represents the complete state of a Scrabble board."""
     
     BOARD_SIZE = 15
     
@@ -80,7 +80,7 @@ class BoardState:
         self._initialize_board()
     
     def _initialize_board(self):
-        """Initialize empty board with premium squares"""
+        """Initialize empty board with premium squares."""
         self.board = [[BoardTile() for _ in range(self.BOARD_SIZE)] 
                      for _ in range(self.BOARD_SIZE)]
         
@@ -90,7 +90,7 @@ class BoardState:
     
     def place_tile(self, row: int, col: int, letter: str, is_blank: bool = False, 
                    is_placed_this_turn: bool = True) -> bool:
-        """Place a tile on the board"""
+        """Place a tile on the board."""
         if not self._is_valid_position(row, col):
             return False
         
@@ -103,7 +103,7 @@ class BoardState:
         return True
     
     def remove_tile(self, row: int, col: int) -> bool:
-        """Remove a tile from the board"""
+        """Remove a tile from the board."""
         if not self._is_valid_position(row, col):
             return False
         
@@ -112,13 +112,13 @@ class BoardState:
         return True
     
     def get_tile(self, row: int, col: int) -> Optional[BoardTile]:
-        """Get tile at position"""
+        """Get tile at position."""
         if not self._is_valid_position(row, col):
             return None
         return self.board[row][col]
     
     def is_empty(self) -> bool:
-        """Check if board is completely empty"""
+        """Check if board is completely empty."""
         for row in self.board:
             for tile in row:
                 if not tile.is_empty():
@@ -126,7 +126,7 @@ class BoardState:
         return True
     
     def find_anchors(self) -> set:
-        """Find anchor positions (empty squares adjacent to placed tiles)"""
+        """Find anchor positions (empty squares adjacent to placed tiles)."""
         self.anchors = set()
         
         for r in range(self.BOARD_SIZE):
@@ -146,11 +146,11 @@ class BoardState:
         return self.anchors
     
     def _is_valid_position(self, row: int, col: int) -> bool:
-        """Check if position is within board bounds"""
+        """Check if position is within board bounds."""
         return 0 <= row < self.BOARD_SIZE and 0 <= col < self.BOARD_SIZE
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for JSON serialization"""
+        """Convert to dictionary for JSON serialization."""
         return {
             "board": [[tile.to_dict() for tile in row] for row in self.board],
             "anchors": list(self.anchors),
@@ -159,7 +159,7 @@ class BoardState:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'BoardState':
-        """Create BoardState from dictionary"""
+        """Create BoardState from dictionary."""
         board_state = cls()
         
         if "board" in data:
@@ -178,12 +178,12 @@ class BoardState:
     
     @classmethod
     def create_empty(cls) -> 'BoardState':
-        """Create an empty board"""
+        """Create an empty board."""
         return cls()
     
     @classmethod
     def create_test_board(cls) -> 'BoardState':
-        """Create a board with some test tiles for development"""
+        """Create a board with some test tiles for development."""
         board = cls()
         # Place "HELLO" horizontally starting at center
         test_word = "HELLO"
@@ -197,8 +197,8 @@ class BoardState:
     
     def get_legacy_board(self) -> List[List]:
         """
-        Convert to legacy board format for compatibility with existing solver code
-        Returns List[List[Tile]] where Tile has letter, premium, is_blank attributes
+        Convert to legacy board format for compatibility with existing solver code.
+        Returns List[List[Tile]] where Tile has letter, premium, is_blank attributes.
         """
         # Import here to avoid circular imports
         from .legacy_tile import LegacyTile
@@ -218,7 +218,7 @@ class BoardState:
         return legacy_board
     
     def print_board(self):
-        """Print board state for debugging"""
+        """Print board state for debugging."""
         print("\nCurrent Board State:")
         for r in range(self.BOARD_SIZE):
             row_str = ""

@@ -1,15 +1,23 @@
 '''
-Houses Scrabble Board class and related functions/objects.
+Legacy Scrabble Board data structures used by the CLI demo and prototype.
+
+Contains:
+- `Tile`: minimal cell with letter, premium, and blank flag
+- `Board`: 15x15 grid with premium mapping and anchor detection
 '''
 BOARD_SIZE = 15  # Standard Scrabble board size
 
 class Tile:
+    """Represents a single legacy board cell and its letter/premium state."""
+
     def __init__(self, letter=None, premium=None, is_blank=False):
         self.letter = letter  # E.g. 'A', 'B', None
         self.premium = premium  # E.g. 'TW', 'DL', None
         self.is_blank = is_blank  # If a blank tile was used
 
 class Board:
+    """15x15 Scrabble board with standard premium squares and anchors."""
+
     def __init__(self):
         self.premium_map = {
             # Triple Word (TW) - dark red
@@ -47,14 +55,20 @@ class Board:
         
 
     def __initBoard(self):
+        """Initialize premium squares on the board tiles."""
         for (r, c), premium in self.premium_map.items():
             self.board[r][c].premium = premium
     
     def print_board(self):
+        """Print a premium/letter grid view helpful for debugging."""
         for r in range(BOARD_SIZE):
             print(' '.join(self.board[r][c].premium or '--' for c in range(BOARD_SIZE)))
 
     def find_anchors(self):
+        """Compute set of empty squares adjacent to at least one letter.
+
+        Ensures center star (7,7) is included when the board is empty.
+        """
         for r in range(BOARD_SIZE):
             for c in range(BOARD_SIZE):
                 if self.board[r][c].letter is not None:

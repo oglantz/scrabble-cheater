@@ -1,6 +1,6 @@
 """
 Validation Utilities
-Input validation for API endpoints
+Input validation helpers for API endpoints and services.
 """
 
 import re
@@ -9,7 +9,7 @@ from models.board_state import BoardState
 
 def validate_tiles(tiles: List[str]) -> Optional[str]:
     """
-    Validate user tiles input
+    Validate user tiles input.
     
     Args:
         tiles: List of tile letters (A-Z, _ for blanks)
@@ -43,7 +43,7 @@ def validate_tiles(tiles: List[str]) -> Optional[str]:
 
 def validate_board_state(board_state: BoardState) -> Optional[str]:
     """
-    Validate board state
+    Validate board state.
     
     Args:
         board_state: BoardState object to validate
@@ -98,7 +98,7 @@ def validate_board_state(board_state: BoardState) -> Optional[str]:
 
 def validate_image_file(filename: str, max_size_mb: int = 10) -> Optional[str]:
     """
-    Validate uploaded image file
+    Validate uploaded image file.
     
     Args:
         filename: Name of uploaded file
@@ -124,7 +124,7 @@ def validate_image_file(filename: str, max_size_mb: int = 10) -> Optional[str]:
 
 def sanitize_input(text: str, max_length: int = 100) -> str:
     """
-    Sanitize text input
+    Sanitize text input.
     
     Args:
         text: Input text to sanitize

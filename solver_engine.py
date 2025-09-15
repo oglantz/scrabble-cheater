@@ -1,7 +1,23 @@
+"""
+Legacy solver implementation used by the CLI demo and early prototypes.
+
+Provides core search, scoring, and placement validation logic for Scrabble
+moves working against the legacy `Board`/`Tile` and `Trie` structures.
+"""
+
 from wordset_trie import Trie
 from board import Tile, BOARD_SIZE
 
 class Solver:
+    """Searches for highest-scoring Scrabble placements on a legacy board.
+
+    Args:
+        board: 15x15 grid of `Tile` objects.
+        wordset: Dictionary `Trie` supporting word/prefix lookups.
+        rack: List of player tiles (letters A-Z, '_' for blanks).
+        anchors: Set of candidate empty squares adjacent to existing tiles.
+    """
+
     def __init__(self, board:list[list[Tile]], wordset:Trie, rack, anchors:set):
         self.board = board
         self.wordset = wordset
@@ -16,6 +32,10 @@ class Solver:
         self.center = (7, 7)
 
     def get_crossword(self, board, row, col, direction):
+        """Compute the perpendicular word formed through (row,col).
+
+        Returns a tuple of (word, tiles) or (None, None) if length < 2.
+        """
         dr, dc = (0, 1) if direction == 'down' else (1, 0)
         r, c = row, col
         while 0 <= r - dr < BOARD_SIZE and 0 <= c - dc < BOARD_SIZE and board[r - dr][c - dc].letter:
@@ -34,6 +54,7 @@ class Solver:
         return (word, tiles) if len(word) > 1 else (None, None)
 
     def get_main_word_span(self, board, placed, direction):
+        """Build the contiguous main word span covering all placed tiles."""
         placed_map = {(r, c): (letter, is_blank) for r, c, letter, is_blank in placed}
         dr, dc = (0, 1) if direction == 'right' else (1, 0)
         first_r, first_c = placed[0][0], placed[0][1]
@@ -63,6 +84,7 @@ class Solver:
         return word, tiles
 
     def build_word(self, board, rack, row, col, prefix, placed, results, direction):
+        """DFS word builder that tries placing rack tiles along a direction."""
         if row >= BOARD_SIZE or col >= BOARD_SIZE:
             return
 
@@ -101,6 +123,7 @@ class Solver:
                 placed.pop()
 
     def score_word(self, word, tiles):
+        """Score a word given its tile coordinates and blank flags."""
         word_multiplier = 1
         score = 0
 
@@ -124,6 +147,10 @@ class Solver:
         return score * word_multiplier
 
     def score_placement(self, _, placed, direction):
+        """Validate and score a placement including cross words and bonuses.
+
+        Returns -1 for invalid placements, or the total score otherwise.
+        """
         main_word, tiles = self.get_main_word_span(self.board, placed, direction)
         if not self.wordset.is_word(main_word):
             return -1
@@ -156,6 +183,7 @@ class Solver:
         return total_score
 
     def generate_best_move(self, trie, board, rack):
+        """Search around anchors and return the highest scoring move dict."""
         all_moves = []
 
         for (row, col) in self.anchors:

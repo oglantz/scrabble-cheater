@@ -1,12 +1,15 @@
 """
-Configuration settings for the Flask backend
+Configuration settings for the Flask backend.
+
+Defines base, development, production, and testing configuration classes.
+Provides a helper to initialize the app and ensure upload paths exist.
 """
 
 import os
 from pathlib import Path
 
 class Config:
-    """Base configuration"""
+    """Base configuration."""
     
     # Flask settings
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
@@ -32,22 +35,22 @@ class Config:
     
     @staticmethod
     def init_app(app):
-        """Initialize app with configuration"""
+        """Initialize app with configuration (create upload path, etc.)."""
         # Create upload folder if it doesn't exist
         upload_path = Path(Config.UPLOAD_FOLDER)
         upload_path.mkdir(exist_ok=True)
 
 class DevelopmentConfig(Config):
-    """Development configuration"""
+    """Development configuration."""
     DEBUG = True
     
 class ProductionConfig(Config):
-    """Production configuration"""
+    """Production configuration."""
     DEBUG = False
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'production-secret-key'
 
 class TestingConfig(Config):
-    """Testing configuration"""
+    """Testing configuration."""
     TESTING = True
     DEBUG = True
     

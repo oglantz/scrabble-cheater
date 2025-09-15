@@ -1,7 +1,7 @@
 """
 Solver Service
-Handles finding optimal Scrabble moves
-Integrates with existing solver code and provides clean API interface
+Finds optimal Scrabble moves by orchestrating board conversion, wordset access,
+and the enhanced solver implementation. Provides a clean service API for views.
 """
 
 import logging
@@ -14,14 +14,14 @@ from core.wordset_loader import load_dictionary
 logger = logging.getLogger(__name__)
 
 class SolverService:
-    """Service for finding optimal Scrabble moves"""
+    """Service for finding optimal Scrabble moves."""
     
     def __init__(self):
         self.wordset = None
         self._load_wordset()
     
     def _load_wordset(self):
-        """Load the dictionary/wordset"""
+        """Load the dictionary/wordset into memory for fast lookups."""
         try:
             self.wordset = load_dictionary('wordset.txt')
             logger.info("Wordset loaded successfully")
@@ -31,7 +31,7 @@ class SolverService:
             self._create_test_wordset()
     
     def _create_test_wordset(self):
-        """Create a minimal wordset for testing when main wordset is unavailable"""
+        """Create a minimal wordset for testing when main wordset is unavailable."""
         from core.wordset_trie import Trie
         
         logger.warning("Creating test wordset - limited functionality")
@@ -52,7 +52,7 @@ class SolverService:
     def find_optimal_moves(self, board_state: BoardState, user_tiles: List[str], 
                           max_moves: int = 10) -> List[Move]:
         """
-        Find the best possible moves for given board state and tiles
+        Find the best possible moves for given board state and tiles.
         
         Args:
             board_state: Current board state
@@ -102,7 +102,7 @@ class SolverService:
     
     def validate_move(self, board_state: BoardState, move: Move) -> bool:
         """
-        Validate that a move is legal on the given board
+        Validate that a move is legal on the given board.
         
         Args:
             board_state: Current board state

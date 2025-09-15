@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import ScrabbleBoard from './ScrabbleBoard';
 
+/**
+ * ResultsDisplay component
+ * Renders the top moves, details for the selected move, and a visual board.
+ *
+ * @param {{ results: {
+ *   moves: Array<{ word: string, score: number, tiles: Array<[number, number, string, boolean]>, direction: 'right'|'down', start: [number, number] }>,
+ *   board_state: any,
+ * } }} props
+ */
+
 const ResultsDisplay = ({ results }) => {
   const [selectedMove, setSelectedMove] = useState(0);
 

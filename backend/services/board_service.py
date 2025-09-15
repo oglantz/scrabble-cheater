@@ -1,6 +1,6 @@
 """
 Board Service
-Handles board state management and manipulation
+Handles board state management and manipulation for the API layer.
 """
 
 import logging
@@ -10,17 +10,21 @@ from models.board_state import BoardState, BoardTile
 logger = logging.getLogger(__name__)
 
 class BoardService:
-    """Service for managing board state"""
+    """Service for managing board state.
+
+    Provides helpers to construct, validate, mutate, and summarize
+    `BoardState` instances used by the solver and endpoints.
+    """
     
     def __init__(self):
         pass
     
     def create_empty_board(self) -> BoardState:
-        """Create a new empty board"""
+        """Create a new empty board."""
         return BoardState.create_empty()
     
     def create_test_board(self) -> BoardState:
-        """Create a board with test data for development"""
+        """Create a board with test data for development."""
         return BoardState.create_test_board()
     
     def validate_board_state(self, board_state: BoardState) -> Optional[str]:
@@ -66,7 +70,7 @@ class BoardService:
     def place_word(self, board_state: BoardState, word: str, start_row: int, 
                    start_col: int, direction: str, tiles_from_rack: List[str]) -> bool:
         """
-        Place a word on the board
+        Place a word on the board.
         
         Args:
             board_state: Board to modify

@@ -1,5 +1,10 @@
 import React from 'react';
 
+/**
+ * Header component for the Scrabble Cheater app.
+ * Displays the title and a short description.
+ */
+
 const Header = () => {
   return (
     <header className="bg-scrabble-brown text-white shadow-lg">

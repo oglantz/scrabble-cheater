@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Backend Flask API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: scrabble-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+    volumes:
+      # Mount wordset.txt for the solver
+      - ./backend/wordset.txt:/app/wordset.txt:ro
+    networks:
+      - scrabble-network
+    restart: unless-stopped
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: scrabble-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - scrabble-network
+    restart: unless-stopped
+
+# Network for container communication
+networks:
+  scrabble-network:
+    driver: bridge

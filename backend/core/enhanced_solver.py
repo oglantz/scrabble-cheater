@@ -161,6 +161,10 @@ class EnhancedSolver:
                 if not self.wordset.starts_with(new_prefix):
                     continue
                 
+                # Validate perpendicular cross-word formed by this placement
+                if not self._validate_perpendicular_at(row, col, letter, direction):
+                    continue
+                
                 # Place tile temporarily
                 new_placed = placed + [(row, col, letter, is_blank)]
                 
@@ -186,13 +190,20 @@ class EnhancedSolver:
             if not placed:
                 return None
             
+            # Build the full main word as it will appear on the board, including
+            # any pre-existing adjacent letters. If the contiguous path does not
+            # actually cover all placed tiles, treat as invalid.
+            full_word, covers_all = self._build_main_word(placed, direction)
+            if not covers_all:
+                return None
+
             # Calculate score
             score = self._calculate_score(word, placed, direction)
             if score <= 0:
                 return None
             
             return {
-                'word': word,
+                'word': full_word or word,
                 'score': score,
                 'tiles': placed,
                 'direction': direction,
@@ -273,6 +284,17 @@ class EnhancedSolver:
                 if not connects:
                     return False
             
+            # Validate the full main word created by this placement
+            main_word, covers_all = self._build_main_word(placed, move['direction'])
+            if not covers_all:
+                return False
+            if len(main_word) > 1 and not self.wordset.is_word(main_word):
+                return False
+
+            # All perpendicular cross-words created must be valid
+            if not self._are_all_cross_words_valid(placed, move['direction']):
+                return False
+            
             return True
             
         except Exception as e:
@@ -290,3 +312,108 @@ class EnhancedSolver:
     def _is_valid_position(self, row: int, col: int) -> bool:
         """Check if position is within board bounds"""
         return 0 <= row < self.BOARD_SIZE and 0 <= col < self.BOARD_SIZE
+
+    def _validate_perpendicular_at(self, row: int, col: int, letter: str, direction: str) -> bool:
+        """Validate the perpendicular (cross) word formed by placing a letter at (row,col).
+        Returns True if either no cross word is formed (length == 1) or the formed
+        word exists in the dictionary.
+        """
+        try:
+            word = self._build_perpendicular_word(row, col, letter, direction)
+            if len(word) <= 1:
+                return True
+            return self.wordset.is_word(word)
+        except Exception:
+            return False
+
+    def _build_perpendicular_word(self, row: int, col: int, letter: str, direction: str) -> str:
+        """Construct the perpendicular word string formed at placement (row,col)."""
+        if direction == 'right':
+            dr_back, dc_back = -1, 0  # move up
+            dr_fwd, dc_fwd = 1, 0     # move down
+        else:  # down
+            dr_back, dc_back = 0, -1  # move left
+            dr_fwd, dc_fwd = 0, 1     # move right
+
+        # Move backwards to the start of the perpendicular word
+        r, c = row, col
+        while self._is_valid_position(r + dr_back, c + dc_back) and self.board[r + dr_back][c + dc_back].letter is not None:
+            r += dr_back
+            c += dc_back
+
+        # Build the word from start to end, inserting the new letter at (row,col)
+        chars = []
+        cur_r, cur_c = r, c
+        while self._is_valid_position(cur_r, cur_c):
+            if cur_r == row and cur_c == col:
+                chars.append(letter)
+            else:
+                existing = self.board[cur_r][cur_c].letter
+                if existing is None:
+                    break
+                chars.append(existing)
+            cur_r += dr_fwd
+            cur_c += dc_fwd
+
+        return ''.join(chars)
+
+    def _are_all_cross_words_valid(self, placed: List[Tuple[int, int, str, bool]], direction: str) -> bool:
+        """Check that for each placed tile, its perpendicular word is valid (if length > 1)."""
+        for row, col, letter, _ in placed:
+            if not self._validate_perpendicular_at(row, col, letter, direction):
+                return False
+        return True
+
+    def _build_main_word(self, placed: List[Tuple[int, int, str, bool]], direction: str) -> Tuple[str, bool]:
+        """Construct the full main word along `direction` including adjacent
+        existing letters. Also verify that the contiguous path covers every
+        placed tile position. Returns (word, covers_all_placed).
+
+        This prevents illegal attachments such as placing 'PILFERS' beneath an
+        existing 'H' to form 'HPILFERS' unless that full word is valid.
+        """
+        if not placed:
+            return '', False
+
+        placed_map = {(r, c): ch for r, c, ch, _ in placed}
+
+        if direction == 'right':
+            dr_back, dc_back = 0, -1
+            dr_fwd, dc_fwd = 0, 1
+            seed_row, seed_col = min(((r, c) for r, c, _, _ in placed), key=lambda t: t[1])
+        else:  # down
+            dr_back, dc_back = -1, 0
+            dr_fwd, dc_fwd = 1, 0
+            seed_row, seed_col = min(((r, c) for r, c, _, _ in placed), key=lambda t: t[0])
+
+        # Extend backwards to the start of the contiguous word by consuming existing tiles
+        r, c = seed_row, seed_col
+        while self._is_valid_position(r + dr_back, c + dc_back) and self.board[r + dr_back][c + dc_back].letter is not None:
+            r += dr_back
+            c += dc_back
+
+        # Walk forward building the contiguous word
+        chars = []
+        visited_placed = set()
+        steps = 0
+        while self._is_valid_position(r, c) and steps < self.BOARD_SIZE:
+            steps += 1
+            if self.board[r][c].letter is not None:
+                chars.append(self.board[r][c].letter)
+            elif (r, c) in placed_map:
+                chars.append(placed_map[(r, c)])
+                visited_placed.add((r, c))
+            else:
+                break
+
+            nr, nc = r + dr_fwd, c + dc_fwd
+            if not self._is_valid_position(nr, nc):
+                break
+            if self.board[nr][nc].letter is None and (nr, nc) not in placed_map:
+                # Next cell would be empty and not part of placement; word ends
+                r, c = nr, nc
+                break
+            r, c = nr, nc
+
+        covers_all = visited_placed == set((r, c) for r, c, _, _ in placed)
+        return ''.join(chars), covers_all

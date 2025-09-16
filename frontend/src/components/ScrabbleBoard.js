@@ -115,8 +115,7 @@ const ScrabbleBoard = ({ boardState, selectedMove }) => {
       </h4>
       
       <div className="flex justify-center">
-        <div className="grid grid-cols-15 gap-px bg-gray-400 p-2 rounded-lg" 
-             style={{gridTemplateColumns: 'repeat(15, 1fr)'}}>
+        <div className="grid grid-cols-15 gap-px bg-gray-400 p-2 rounded-lg">
           {board.map((row, rowIndex) => 
             row.map((cell, colIndex) => {
               const premium = premiumLookup[`${rowIndex}-${colIndex}`];

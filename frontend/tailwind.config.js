@@ -14,6 +14,9 @@ module.exports = {
           blue: '#4169E1',
           red: '#DC143C'
         }
+      },
+      gridTemplateColumns: {
+        '15': 'repeat(15, minmax(0, 1fr))',
       }
     },
   },

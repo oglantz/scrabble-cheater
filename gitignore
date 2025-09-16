@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# Virtual envs
+venv/
+.venv/
+backend/venv/
+env/
+ENV/
+
+# Packaging / build
+build/
+dist/
+.eggs/
+*.egg-info/
+pip-wheel-metadata/
+
+# Test/coverage caches
+.pytest_cache/
+**/.pytest_cache/
+.coverage*
+coverage*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# Env files
+.env
+.env.*
+.python-version
+
+# Node/Frontend
+node_modules/
+frontend/node_modules/
+frontend/.next/
+.next/
+frontend/dist/
+frontend/build/
+*.log
+npm-debug.log*
+yarn-*.log*
+pnpm-debug.log*
+
+# Editors/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -64,9 +64,30 @@ const BoardEditor = ({ onChange, initialBoardState }) => {
   const [editingCell, setEditingCell] = useState(null); // {row, col}
   const [tempLetter, setTempLetter] = useState('');
   const [tempBlank, setTempBlank] = useState(false);
+  const [direction, setDirection] = useState('horizontal'); // 'horizontal' | 'vertical'
+  const [recentSelections, setRecentSelections] = useState([]); // Track last few manual selections
 
   const emitChange = (newBoard) => {
     onChange && onChange({ board: newBoard });
+  };
+
+  const detectDirection = (newSelection) => {
+    const updatedSelections = [...recentSelections, newSelection].slice(-3); // Keep last 3 selections
+    setRecentSelections(updatedSelections);
+    
+    if (updatedSelections.length >= 2) {
+      const lastTwo = updatedSelections.slice(-2);
+      const [prev, curr] = lastTwo;
+      
+      // Check if moving vertically (same column, different row)
+      if (prev.col === curr.col && prev.row !== curr.row) {
+        setDirection('vertical');
+      }
+      // Check if moving horizontally (same row, different column)
+      else if (prev.row === curr.row && prev.col !== curr.col) {
+        setDirection('horizontal');
+      }
+    }
   };
 
   const startEdit = (row, col) => {
@@ -74,6 +95,31 @@ const BoardEditor = ({ onChange, initialBoardState }) => {
     setEditingCell({ row, col });
     setTempLetter(tile.letter || '');
     setTempBlank(!!tile.is_blank);
+    
+    // Track this manual selection for direction detection
+    detectDirection({ row, col });
+  };
+
+  const getNextTile = (currentRow, currentCol) => {
+    if (direction === 'vertical') {
+      // Move down (next row, same column)
+      if (currentRow < BOARD_SIZE - 1) {
+        return { row: currentRow + 1, col: currentCol };
+      }
+      // If at bottom of board, stay at current position
+      return { row: currentRow, col: currentCol };
+    } else {
+      // Move right (same row, next column)
+      if (currentCol < BOARD_SIZE - 1) {
+        return { row: currentRow, col: currentCol + 1 };
+      }
+      // If at end of row, move to next row
+      if (currentRow < BOARD_SIZE - 1) {
+        return { row: currentRow + 1, col: 0 };
+      }
+      // If at the end of the board, stay at current position
+      return { row: currentRow, col: currentCol };
+    }
   };
 
   const commitEdit = () => {
@@ -91,7 +137,22 @@ const BoardEditor = ({ onChange, initialBoardState }) => {
       newBoard[row][col].is_blank = tempBlank && !!clean;
     }
     setBoard(newBoard);
-    setEditingCell(null);
+    
+    // Auto-select next tile
+    const nextTile = getNextTile(row, col);
+    if (nextTile.row !== row || nextTile.col !== col) {
+      // Move to next tile
+      setEditingCell(nextTile);
+      setTempLetter(newBoard[nextTile.row][nextTile.col].letter || '');
+      setTempBlank(!!newBoard[nextTile.row][nextTile.col].is_blank);
+      
+      // Track this auto-advancement for direction detection
+      detectDirection(nextTile);
+    } else {
+      // At end of board, stop editing
+      setEditingCell(null);
+    }
+    
     emitChange(newBoard);
   };
 
@@ -163,21 +224,26 @@ const BoardEditor = ({ onChange, initialBoardState }) => {
                   </div>
                 )}
                 {isEditing && (
-                  <div className="absolute inset-0 bg-white/90 p-1 flex flex-col items-center justify-center gap-1 z-10" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+                  <div className="absolute inset-0 bg-white p-1 flex flex-col items-center justify-center gap-1 z-10 border-2 border-blue-500" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
                     <input
                       type="text"
                       value={tempLetter}
                       onChange={(e) => setTempLetter(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,1))}
-                      onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditingCell(null); }}
-                      className="w-10 h-7 text-center text-base font-bold border border-gray-400 rounded"
+                      onKeyDown={(e) => { 
+                        if (e.key === 'Enter') {
+                          commitEdit();
+                        } 
+                        if (e.key === 'Escape') {
+                          setEditingCell(null);
+                        }
+                      }}
+                      className="w-10 h-7 text-center text-base font-bold border-2 border-gray-600 rounded bg-white text-black"
                       autoFocus
                     />
                     <label className="flex items-center gap-1 text-[10px] text-gray-700">
                       <input type="checkbox" checked={tempBlank} onChange={(e) => setTempBlank(e.target.checked)} /> Blank
                     </label>
-                    <div className="flex gap-1">
-                      <button className="text-xs bg-green-600 text-white px-2 py-0.5 rounded" onClick={(e) => { e.stopPropagation(); commitEdit(); }}>Save</button>
-                      <button className="text-xs bg-gray-400 text-white px-2 py-0.5 rounded" onClick={(e) => { e.stopPropagation(); setEditingCell(null); }}>Cancel</button>
+                    <div className="text-[8px] text-blue-600 font-bold">
                     </div>
                   </div>
                 )}

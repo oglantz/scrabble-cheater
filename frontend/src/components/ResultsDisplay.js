@@ -140,18 +140,142 @@ const ResultsDisplay = ({ results }) => {
       {/* Score Breakdown */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <h4 className="text-lg font-semibold text-gray-800 mb-3">Score Breakdown</h4>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Base Word Score:</span>
-            <span className="font-medium">{move.score} points</span>
-          </div>
-          {move.tiles.length === 7 && (
-            <div className="flex justify-between text-scrabble-green">
-              <span>Bingo Bonus (7 tiles):</span>
-              <span className="font-medium">+50 points</span>
+        
+        {move.score_breakdown ? (
+          <div className="space-y-4">
+            {/* Tile-by-tile breakdown */}
+            <div>
+              <h5 className="text-md font-medium text-gray-700 mb-2">Tile Values</h5>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {move.score_breakdown.tile_scores.map((tileScore, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-scrabble-cream border border-scrabble-brown rounded flex items-center justify-center font-bold text-sm">
+                        {tileScore.letter}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">
+                          {tileScore.base_value} × {tileScore.premium_multiplier}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {formatPosition(tileScore.position[0], tileScore.position[1])}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-scrabble-green">
+                        {tileScore.final_value}
+                      </div>
+                      {tileScore.premium_type && (
+                        <div className={`text-xs px-1 py-0.5 rounded ${
+                          tileScore.premium_type === 'DL' ? 'bg-blue-100 text-blue-800' :
+                          tileScore.premium_type === 'TL' ? 'bg-blue-200 text-blue-900' :
+                          tileScore.premium_type === 'DW' ? 'bg-red-100 text-red-800' :
+                          tileScore.premium_type === 'TW' ? 'bg-red-200 text-red-900' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {tileScore.premium_type}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Cross Words (if any) */}
+            {Array.isArray(move.score_breakdown.cross_words) && move.score_breakdown.cross_words.length > 0 && (
+              <div className="border-t pt-3">
+                <h5 className="text-md font-medium text-gray-700 mb-2">Cross Words</h5>
+                <div className="space-y-3">
+                  {move.score_breakdown.cross_words.map((cw, idx) => (
+                    <div key={idx} className="p-2 bg-gray-50 rounded border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-semibold text-gray-800">
+                          {cw.word}
+                        </div>
+                        <div className="text-scrabble-green font-bold">{cw.score}</div>
+                      </div>
+                      {Array.isArray(cw.tile_scores) && cw.tile_scores.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {cw.tile_scores.map((ts, tIdx) => (
+                            <div key={tIdx} className="flex items-center gap-2 px-2 py-1 bg-white rounded border">
+                              <div className="w-6 h-6 bg-scrabble-cream border border-scrabble-brown rounded flex items-center justify-center font-bold text-xs">
+                                {ts.letter}
+                              </div>
+                              <div className="text-xs text-gray-700">
+                                {ts.base_value} × {ts.premium_multiplier}
+                              </div>
+                              <div className="text-xs font-semibold text-scrabble-green">
+                                = {ts.final_value}
+                              </div>
+                              {ts.premium_type && (
+                                <div className={`text-[10px] px-1 py-0.5 rounded ${
+                                  ts.premium_type === 'DL' ? 'bg-blue-100 text-blue-800' :
+                                  ts.premium_type === 'TL' ? 'bg-blue-200 text-blue-900' :
+                                  ts.premium_type === 'DW' ? 'bg-red-100 text-red-800' :
+                                  ts.premium_type === 'TW' ? 'bg-red-200 text-red-900' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {ts.premium_type}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Calculation summary */}
+            <div className="border-t pt-3">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Base Word Score:</span>
+                  <span className="font-medium">{move.score_breakdown.base_word_score} points</span>
+                </div>
+                {move.score_breakdown.word_multiplier > 1 && (
+                  <div className="flex justify-between text-red-600">
+                    <span>Word Multiplier ({move.score_breakdown.word_multiplier}×):</span>
+                    <span className="font-medium">{move.score_breakdown.final_word_score} points</span>
+                  </div>
+                )}
+                {move.score_breakdown.cross_words_total > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Cross Words Total:</span>
+                    <span className="font-medium">+{move.score_breakdown.cross_words_total} points</span>
+                  </div>
+                )}
+                {move.score_breakdown.bingo_bonus > 0 && (
+                  <div className="flex justify-between text-scrabble-green">
+                    <span>Bingo Bonus (7 tiles):</span>
+                    <span className="font-medium">+{move.score_breakdown.bingo_bonus} points</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-lg font-bold border-t pt-2">
+                  <span>Total Score:</span>
+                  <span className="text-scrabble-green">{move.score_breakdown.total_score} points</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Base Word Score:</span>
+              <span className="font-medium">{move.score} points</span>
+            </div>
+            {move.tiles.length === 7 && (
+              <div className="flex justify-between text-scrabble-green">
+                <span>Bingo Bonus (7 tiles):</span>
+                <span className="font-medium">+50 points</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Visual Board Display */}

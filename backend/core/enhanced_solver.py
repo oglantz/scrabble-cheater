@@ -198,7 +198,7 @@ class EnhancedSolver:
                 return None
 
             # Calculate score
-            score = self._calculate_score(word, placed, direction)
+            score, score_breakdown = self._calculate_score(word, placed, direction)
             if score <= 0:
                 return None
             
@@ -207,52 +207,219 @@ class EnhancedSolver:
                 'score': score,
                 'tiles': placed,
                 'direction': direction,
-                'start': (placed[0][0], placed[0][1])
+                'start': (placed[0][0], placed[0][1]),
+                'score_breakdown': score_breakdown
             }
             
         except Exception as e:
             logger.error(f"Error creating move: {e}")
             return None
     
-    def _calculate_score(self, word: str, placed: List[Tuple], direction: str) -> int:
-        """Calculate the score for a word placement"""
+    def _calculate_score(self, word: str, placed: List[Tuple], direction: str) -> Tuple[int, Dict[str, Any]]:
+        """Calculate the score for a word placement and return detailed breakdown.
+
+        Includes existing letters in the main word span at face value (no premiums),
+        applies letter multipliers only to newly placed tiles, and applies word
+        multipliers from newly placed tiles landing on DW/TW.
+        """
         try:
-            # This is a simplified scoring - you can enhance based on your existing logic
+            from models.move import TileScore, ScoreBreakdown
+
+            # Map of newly placed tiles for fast lookup
+            placed_map: Dict[Tuple[int, int], Tuple[str, bool]] = {
+                (r, c): (ch, is_blank) for r, c, ch, is_blank in placed
+            }
+
+            # Determine iteration vectors
+            if direction == 'right':
+                dr_back, dc_back = 0, -1
+                dr_fwd, dc_fwd = 0, 1
+                seed_row, seed_col = min(((r, c) for r, c, _, _ in placed), key=lambda t: t[1])
+            else:  # down
+                dr_back, dc_back = -1, 0
+                dr_fwd, dc_fwd = 1, 0
+                seed_row, seed_col = min(((r, c) for r, c, _, _ in placed), key=lambda t: t[0])
+
+            # Walk backwards to start of contiguous main word (consume existing letters)
+            r, c = seed_row, seed_col
+            while self._is_valid_position(r + dr_back, c + dc_back) and self.board[r + dr_back][c + dc_back].letter is not None:
+                r += dr_back
+                c += dc_back
+
             word_multiplier = 1
-            score = 0
-            
-            for row, col, letter, is_blank in placed:
+            tile_scores: List[TileScore] = []
+            base_word_score = 0
+
+            # Iterate forward across the contiguous main word
+            steps = 0
+            while self._is_valid_position(r, c) and steps < self.BOARD_SIZE:
+                steps += 1
+
+                is_newly_placed = (r, c) in placed_map
+                if self.board[r][c].letter is not None and not is_newly_placed:
+                    # Existing board tile
+                    letter = self.board[r][c].letter
+                    is_blank = self.board[r][c].is_blank
+                    premium = None  # premiums do not apply to pre-existing tiles
+                elif is_newly_placed:
+                    # Newly placed tile
+                    letter, is_blank = placed_map[(r, c)]
+                    tile = self.board[r][c]
+                    premium = tile.premium if tile.letter is None else None
+                else:
+                    # Neither existing letter nor newly placed; end of word span
+                    break
+
                 # Base letter value
                 letter_value = 0 if is_blank else self.letter_values.get(letter, 0)
-                
-                # Apply premium if tile is newly placed on premium square
-                tile = self.board[row][col]
-                premium = tile.premium if tile.letter is None else None
-                
-                tile_score = letter_value
-                if premium == 'DL':
-                    tile_score *= 2
-                elif premium == 'TL':
-                    tile_score *= 3
-                elif premium == 'DW':
-                    word_multiplier *= 2
-                elif premium == 'TW':
-                    word_multiplier *= 3
-                
-                score += tile_score
-            
-            # Apply word multiplier
-            score *= word_multiplier
-            
-            # Bonus for using all 7 tiles
-            if len(placed) == 7:
-                score += 50
-            
-            return score
-            
+
+                # Apply letter multipliers only for newly-placed tiles
+                premium_multiplier = 1
+                if is_newly_placed:
+                    if premium == 'DL':
+                        premium_multiplier = 2
+                    elif premium == 'TL':
+                        premium_multiplier = 3
+
+                    # Track word multipliers from newly placed tiles
+                    if premium == 'DW':
+                        word_multiplier *= 2
+                    elif premium == 'TW':
+                        word_multiplier *= 3
+
+                tile_total = letter_value * premium_multiplier
+                base_word_score += tile_total
+
+                # Record tile score entry (show premium badge only for new tiles)
+                tile_scores.append(
+                    TileScore(
+                        letter=letter,
+                        base_value=letter_value,
+                        premium_multiplier=premium_multiplier,
+                        final_value=tile_total,
+                        premium_type=premium if is_newly_placed else None,
+                        position=(r, c),
+                        is_blank=is_blank,
+                    )
+                )
+
+                # Advance to next cell if it continues the word span
+                nr, nc = r + dr_fwd, c + dc_fwd
+                if not self._is_valid_position(nr, nc):
+                    break
+                if self.board[nr][nc].letter is None and (nr, nc) not in placed_map:
+                    # Next is empty and not part of placement → end of word
+                    break
+                r, c = nr, nc
+
+            # Apply word multiplier to the main word total
+            final_word_score = base_word_score * word_multiplier
+
+            # Calculate cross words created by each newly-placed tile
+            cross_words_total = 0
+            cross_words_details: List[Dict[str, Any]] = []
+
+            # Helper to score a single cross word given origin (r,c)
+            def _score_cross_word_at(r: int, c: int) -> Tuple[int, List[TileScore], str]:
+                # Determine perpendicular direction
+                if direction == 'right':
+                    dr_back, dc_back = -1, 0
+                    dr_fwd, dc_fwd = 1, 0
+                else:
+                    dr_back, dc_back = 0, -1
+                    dr_fwd, dc_fwd = 0, 1
+
+                # Walk to start of cross word
+                sr, sc = r, c
+                while self._is_valid_position(sr + dr_back, sc + dc_back) and self.board[sr + dr_back][sc + dc_back].letter is not None:
+                    sr += dr_back
+                    sc += dc_back
+
+                # Build and score cross word; premiums apply only to the placed tile at (r,c)
+                cw_chars = []
+                cw_tile_scores: List[TileScore] = []
+                cw_base = 0
+                cur_r, cur_c = sr, sc
+                while self._is_valid_position(cur_r, cur_c):
+                    is_new = (cur_r, cur_c) in placed_map
+                    if self.board[cur_r][cur_c].letter is not None and not is_new:
+                        ch = self.board[cur_r][cur_c].letter
+                        is_blank = self.board[cur_r][cur_c].is_blank
+                        premium = None
+                    elif is_new:
+                        ch, is_blank = placed_map[(cur_r, cur_c)]
+                        tile = self.board[cur_r][cur_c]
+                        # Only the newly placed tile may receive premium multipliers
+                        premium = tile.premium if tile.letter is None and (cur_r == r and cur_c == c) else None
+                    else:
+                        break
+
+                    cw_chars.append(ch)
+                    val = 0 if is_blank else self.letter_values.get(ch, 0)
+                    mult = 1
+                    if is_new and cur_r == r and cur_c == c:
+                        if premium == 'DL':
+                            mult = 2
+                        elif premium == 'TL':
+                            mult = 3
+                    # Note: DW/TW do NOT apply to cross words (only to main word)
+                    tile_total = val * mult
+                    cw_base += tile_total
+                    cw_tile_scores.append(
+                        TileScore(
+                            letter=ch,
+                            base_value=val,
+                            premium_multiplier=mult,
+                            final_value=tile_total,
+                            premium_type=premium if (is_new and cur_r == r and cur_c == c) else None,
+                            position=(cur_r, cur_c),
+                            is_blank=is_blank,
+                        )
+                    )
+
+                    nr, nc = cur_r + dr_fwd, cur_c + dc_fwd
+                    if not self._is_valid_position(nr, nc):
+                        break
+                    if self.board[nr][nc].letter is None and (nr, nc) not in placed_map:
+                        break
+                    cur_r, cur_c = nr, nc
+
+                cw_word = ''.join(cw_chars)
+                if len(cw_word) <= 1:
+                    return 0, [], ''
+                return cw_base, cw_tile_scores, cw_word
+
+            for pr, pc, _, _ in placed:
+                cw_score, cw_tiles, cw_word = _score_cross_word_at(pr, pc)
+                if cw_score > 0 and cw_word and self.wordset.is_word(cw_word):
+                    cross_words_total += cw_score
+                    cross_words_details.append({
+                        'word': cw_word,
+                        'score': cw_score,
+                        'tile_scores': cw_tiles,
+                        'origin': (pr, pc)
+                    })
+
+            # Bingo bonus for using all 7 tiles from rack
+            bingo_bonus = 50 if len(placed) == 7 else 0
+            total_score = final_word_score + cross_words_total + bingo_bonus
+
+            score_breakdown = ScoreBreakdown(
+                tile_scores=tile_scores,
+                word_multiplier=word_multiplier,
+                base_word_score=base_word_score,
+                final_word_score=final_word_score,
+                bingo_bonus=bingo_bonus,
+                cross_words_total=cross_words_total,
+                cross_words=cross_words_details,
+                total_score=total_score,
+            )
+
+            return total_score, score_breakdown
+
         except Exception as e:
             logger.error(f"Error calculating score: {e}")
-            return 0
+            return 0, None
     
     def _is_valid_move(self, move: Dict[str, Any]) -> bool:
         """Validate that a move is legal"""

@@ -56,12 +56,15 @@ def small_wordset_solver(monkeypatch):
     trie = Trie()
     # Core words for testing various scenarios (crosses, overlaps, blanks)
     for w in [
-        "A", "I", "IN", "ON", "AT", "TO", "HE", "SHE",
+        # Common short words for dense cross formations
+        "A", "I", "IN", "ON", "AT", "TO", "IT", "IS", "AS", "AN",
+        "HE", "SHE", "WE", "ME", "BE", "DO", "GO", "OF", "OR", "UP",
+        # Base words used across suites
         "HELLO", "HELL", "HELP", "HOPE", "HOP", "HERO",
         "WORLD", "WORD", "WORDS", "ROW", "OWL",
         "CAT", "CATS", "ACT", "TACT", "TACTIC", "TACTICS",
         "TREE", "REEF", "FREE", "FREED", "FEED",
-        "DOG", "GOD", "GO", "ODO", "DO",
+        "DOG", "GOD", "ODO",  # include palindromic/odd to test crosses
         "QUIZ", "JAZZ", "JAZZY", "FIZZ", "BUZZ",
         "TILE", "TILES", "BOARD", "SCORE",
     ]:

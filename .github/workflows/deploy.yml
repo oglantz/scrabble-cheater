@@ -32,14 +32,19 @@ jobs:
           docker push  $REGISTRY/scrabble-frontend:${{ github.sha }}
 
 
-      - name: Rolling update via SSM
+      - name: Roll out via SSM
         run: |
+          REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
-            --targets "Key=instanceids,Values=${{ secrets.EC2_INSTANCE_ID }}" \
-            --parameters 'commands=["cd /opt/app",
-                                    "aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin '"${{ ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com }}"'",
-                                    "sed -i \"s#:latest#:'"${{ github.sha }}"'#g\" docker-compose.yml",
-                                    "docker compose pull",
-                                    "docker compose up -d"]' \
+            --targets "Key=instanceIds,Values=${{ secrets.EC2_INSTANCE_ID }}" \
+            --parameters 'commands=[
+              "cd /opt/app",
+              "aws ecr get-login-password --region '"${{ secrets.AWS_REGION }}"' | docker login --username AWS --password-stdin '"$REGISTRY"'",
+              "sed -i \"s#scrabble-backend:.*#scrabble-backend:'"${{ github.sha }}"'#\" docker-compose.yml",
+              "sed -i \"s#scrabble-frontend:.*#scrabble-frontend:'"${{ github.sha }}"'#\" docker-compose.yml",
+              "docker compose pull",
+              "docker compose up -d"
+            ]' \
             --comment "Deploy $GITHUB_SHA"
+

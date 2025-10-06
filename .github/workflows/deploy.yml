@@ -20,10 +20,14 @@ jobs:
 
       - uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build & push images
+      - name: Build & push images (explicit registry)
+        env:
+          REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
         run: |
-          REG="${{ steps.ecr.outputs.registry }}"
-          docker build -t $REG/scrabble-backend:${{ github.sha }} ./backend
-          docker build -t $REG/scrabble-frontend:${{ github.sha }} ./frontend
-          docker push $REG/scrabble-backend:${{ github.sha }}
-          docker push $REG/scrabble-frontend:${{ github.sha }}
+          echo "Registry is: $REGISTRY"
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+            | docker login --username AWS --password-stdin $REGISTRY
+          docker build -t $REGISTRY/scrabble-backend:${{ github.sha }} ./backend
+          docker push  $REGISTRY/scrabble-backend:${{ github.sha }}
+          docker build -t $REGISTRY/scrabble-frontend:${{ github.sha }} ./frontend
+          docker push  $REGISTRY/scrabble-frontend:${{ github.sha }}

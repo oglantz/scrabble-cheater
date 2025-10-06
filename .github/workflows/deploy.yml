@@ -24,10 +24,22 @@ jobs:
         env:
           REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
         run: |
-          echo "Registry is: $REGISTRY"
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
             | docker login --username AWS --password-stdin $REGISTRY
           docker build -t $REGISTRY/scrabble-backend:${{ github.sha }} ./backend
           docker push  $REGISTRY/scrabble-backend:${{ github.sha }}
           docker build -t $REGISTRY/scrabble-frontend:${{ github.sha }} ./frontend
           docker push  $REGISTRY/scrabble-frontend:${{ github.sha }}
+
+
+      - name: Rolling update via SSM
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=instanceids,Values=${{ secrets.EC2_INSTANCE_ID }}" \
+            --parameters 'commands=["cd /opt/app",
+                                    "aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin '"${{ ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com }}"'",
+                                    "sed -i \"s#:latest#:'"${{ github.sha }}"'#g\" docker-compose.yml",
+                                    "docker compose pull",
+                                    "docker compose up -d"]' \
+            --comment "Deploy $GITHUB_SHA"

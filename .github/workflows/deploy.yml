@@ -1,0 +1,29 @@
+name: deploy-ec2
+on:
+  push:
+    branches: [ main ]
+permissions:
+  id-token: write   # if you use OIDC role assumption (recommended)
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Configure AWS creds – either via OIDC/role or static keys in secrets
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}   # or use access keys inputs
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push images
+        run: |
+          REG="${{ steps.amazon-ecr-login.outputs.registry }}"
+          docker build -t $REG/myapp-backend:${{ github.sha }} ./backend
+          docker build -t $REG/myapp-frontend:${{ github.sha }} ./frontend
+          docker push $REG/myapp-backend:${{ github.sha }}
+          docker push $REG/myapp-frontend:${{ github.sha }}

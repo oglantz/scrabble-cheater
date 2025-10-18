@@ -1,7 +1,8 @@
 name: deploy-ec2
-on:
-  push:
-    branches: [ main ]
+
+# Disabled automatic triggers — manual dispatch only
+on: workflow_dispatch
+
 permissions:
   id-token: write   # if you use OIDC role assumption (recommended)
   contents: read
@@ -47,4 +48,3 @@ jobs:
               "docker compose up -d"
             ]' \
             --comment "Deploy $GITHUB_SHA"
-

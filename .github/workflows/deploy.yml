@@ -1,0 +1,50 @@
+name: deploy-ec2
+
+# Disabled automatic triggers — manual dispatch only
+on: workflow_dispatch
+
+permissions:
+  id-token: write   # if you use OIDC role assumption (recommended)
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Configure AWS creds – either via OIDC/role or static keys in secrets
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}   # or use access keys inputs
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push images (explicit registry)
+        env:
+          REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+            | docker login --username AWS --password-stdin $REGISTRY
+          docker build -t $REGISTRY/scrabble-backend:${{ github.sha }} ./backend
+          docker push  $REGISTRY/scrabble-backend:${{ github.sha }}
+          docker build -t $REGISTRY/scrabble-frontend:${{ github.sha }} ./frontend
+          docker push  $REGISTRY/scrabble-frontend:${{ github.sha }}
+
+
+      - name: Roll out via SSM
+        run: |
+          REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=instanceIds,Values=${{ secrets.EC2_INSTANCE_ID }}" \
+            --parameters 'commands=[
+              "cd /opt/app",
+              "aws ecr get-login-password --region '"${{ secrets.AWS_REGION }}"' | docker login --username AWS --password-stdin '"$REGISTRY"'",
+              "sed -i \"s#scrabble-backend:.*#scrabble-backend:'"${{ github.sha }}"'#\" docker-compose.yml",
+              "sed -i \"s#scrabble-frontend:.*#scrabble-frontend:'"${{ github.sha }}"'#\" docker-compose.yml",
+              "docker compose pull",
+              "docker compose up -d"
+            ]' \
+            --comment "Deploy $GITHUB_SHA"

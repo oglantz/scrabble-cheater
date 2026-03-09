@@ -40,7 +40,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --targets "Key=instanceIds,Values=${{ secrets.EC2_INSTANCE_ID }}" \
             --parameters 'commands=[
-              "cd /app",
+              "cd /usr/bin/app",
               "aws ecr get-login-password --region '"${{ secrets.AWS_REGION }}"' | docker login --username AWS --password-stdin '"$REGISTRY"'",
               "sed -i \"s#scrabble-backend:.*#scrabble-backend:'"${{ github.sha }}"'#\" docker-compose.yml",
               "sed -i \"s#scrabble-frontend:.*#scrabble-frontend:'"${{ github.sha }}"'#\" docker-compose.yml",
